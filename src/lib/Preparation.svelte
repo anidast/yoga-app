@@ -20,7 +20,7 @@
         </li>
     </ul>
     
-    <button class="button py-5 px-6"><a href="/persiapan">Siap Latihan</a></button>
+    <button class="button py-5 px-6"><a href="/latihan">Siap Latihan</a></button>
 </section>
 
 <style>
