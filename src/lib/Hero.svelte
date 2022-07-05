@@ -7,7 +7,7 @@
         <div class="column is-5 py-6">
             <p class="title-yoga">Hidup Sehat dengan Yoga</p>
             <p class="subtitle my-5">Berlatih yoga sendiri dimanapun dan kapanpun bisa kamu lakukan.</p>
-            <button class="button py-5 px-6"><a href="/">Mulai Latihan</a></button>
+            <button class="button py-5 px-6"><a href="/persiapan">Mulai Latihan</a></button>
         </div>
         <div class="column is-7 py-4">
             <figure class="image">
