@@ -1,24 +1,82 @@
 <script>
-    import user from '../assets/user.jpg';
+    // import user from '../assets/user.jpg';
     import instructor from '../assets/instructor.jpg';
     import { PlayIcon, PauseIcon} from 'svelte-feather-icons';
+    import { readable } from 'svelte/store';
+import Preparation from './Preparation.svelte';
+	
+	let timer = 30; // seconds
+	
+	const mstime = readable(new Date().getTime(), set => {
+        let animationFrame
+            const next = () => {
+                set(new Date().getTime())
+                animationFrame = requestAnimationFrame(next)
+            }
+            if (window.requestAnimationFrame) {
+                next()
+                return () => cancelAnimationFrame(animationFrame)
+            }
+	})
+    console.log($mstime);
+	
+    let start, time, toWait, minutes, seconds;
+	$: if (status == 'play'){
+        time = Math.floor(($mstime - start) / 1000)
+	    toWait = timer - time > 0 ? timer - time : 0
+	    minutes = Math.floor(toWait/60)
+	    seconds = toWait - minutes * 60
+    } else if (status == 'pause'){
+        start = new Date().getTime();
+        timer = minutes * 60 + seconds
+    }
+
+    $: status = 'start';
+    let videoSource = null;
+    let loading = false;
+    const obtenerVideoCamara = async () => {
+        status = 'play';
+        start = new Date().getTime();
+        try {
+        loading = true;
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+        });
+        videoSource.srcObject = stream;
+        videoSource.play();
+        loading = false;
+        console.log(videoSource);
+        } catch (error) {
+        console.log(error);
+        }
+    };
 </script>
 
 <section class="container is-fullhd">
     <div class="columns has-text-centered pt-4">
         <div class="column is-4 pl-6 pr-4">
-            <figure class="image">
-                <img src={user} alt="User">
-            </figure>
+            {#if status == 'start'}
+            <button on:click={obtenerVideoCamara} class="button pr my-3">Mulai</button>
+            {:else}
+            <!-- svelte-ignore a11y-media-has-caption -->
+            <video bind:this={videoSource}  width="300" height="200"/>
+                <p class="timer mt-4">{minutes}:{seconds}</p>
 
-            <p class="timer mt-4">0:30</p>
-            <button class="button pr my-3">
-                <PauseIcon class="pause" size={"4x"}/>
-            </button>
-            <p class="rate is-size-2 my-2">
-                Rate: <br>
-                0.0%
-            </p>
+                {#if status == 'play'}
+                <button class="button pr my-3" on:click={() => status='pause'}>
+                    <PauseIcon class="pause" size={"4x"}/>
+                </button>
+                {:else if status == 'pause'}
+                <button class="button pr my-3" on:click={() => status='play'}>
+                    <PlayIcon class="pause" size={"4x"}/>
+                </button>
+                {/if}
+
+                <p class="rate is-size-2 my-2">
+                    Rate: <br>
+                    0.0%
+                </p>
+            {/if}
         </div>
         <div class="column is-8 pr-6 pl-4">
             <figure class="image px-5">
@@ -32,7 +90,7 @@
 </section>
 
 <style>
-    img{
+    video{
         border-radius: 1rem;
     }
 
