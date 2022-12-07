@@ -5,19 +5,20 @@
   import { readable } from "svelte/store";
   import similarity from "compute-cosine-similarity";
   import { onMount } from "svelte";
-  import { keypoint } from './stores';
+  import { keypoint, threshold } from './stores';
+  import { is_empty } from "svelte/internal";
 
   // var similarity = require( 'compute-cosine-similarity' );
 
   // let timeList = [50, 30, 25, 30, 30, 15, 15, 15, 20];
-  let timeList = [30, 30, 15, 15, 20];
+  let timeList = [30, 30, 15, 20];
   let poses = [
               // "child_pose", 
               // "swimmers", 
               // "down_dog", 
               "chair_pose", 
               "crescent_lunge", 
-              "plank", 
+              // "plank", 
               "side_plank", 
               // "low_cobra", 
               "namaste"];
@@ -39,15 +40,15 @@
   console.log($mstime);
 
   let start, time, toWait, minutes, seconds;
-  let i = 0;
+  let idx = 0;
   $: if (status == "play") {
     time = Math.floor(($mstime - start) / 1000);
     toWait = timer - time > 0 ? timer - time : 0;
     minutes = Math.floor(toWait / 60);
     seconds = toWait - minutes * 60;
-    if (time == timer + 1 && i+1 < timeList.length) {
-      i += 1;
-      timer = timeList[i];
+    if (time == timer + 1 && idx+1 < timeList.length) {
+      idx += 1;
+      timer = timeList[idx];
       start = new Date().getTime();
       // console.log('Oke')
     }
@@ -65,6 +66,7 @@
   // }
 
   $: status = "start";
+  $: error = [];
   const width = 300;
   let height = 200;
   let videoSource = null;
@@ -179,15 +181,33 @@
             let iter = [[5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
               [5, 11], [6, 12], [11, 12],
               [11, 13], [12, 14], [13, 15], [14, 16]];
+
+            let body = [['Bahu'], ['Lengan Atas Kanan'], ['Lengan Bawah Kanan'], ['Lengan Atas Kiri'], 
+              ['Lengan Bawah Kiri'], ['Bahu-Pinggul Kanan'], ['Bahu-Pinggul kiri'], ['Pinggul'],
+              ['Paha Kanan'], ['Betis Kanan'], ['Paha Kiri'], ['Betis Kiri']];
+
+            error = [];
             
             // Hitung similaritas tiap anggota tubuh
             // iter.forEach(i => {
             //   similar.push(similarity(prediction[i[0]].concat(prediction[i[1]]), namaste[i[0]].concat(namaste[i[1]])))
             // });
-            iter.forEach(kp => {
-              similar.push(similarity(prediction[kp[0]].concat(prediction[kp[1]]), keypoint[poses[i]][kp[0]].concat(keypoint[poses[i]][kp[1]])));
-              console.log(keypoint[poses[i]])
-            });
+            // iter.forEach(kp => {
+            //   similar.push(similarity(prediction[kp[0]].concat(prediction[kp[1]]), keypoint[poses[i]][kp[0]].concat(keypoint[poses[i]][kp[1]])));
+            //   // console.log(keypoint[poses[i]])
+            // });
+
+            for(let i=0;i<12;i++){
+              let cosinesim = similarity(
+                prediction[iter[i][0]].concat(prediction[iter[i][1]]), 
+                keypoint[poses[idx]][iter[i][0]].concat(keypoint[poses[idx]][iter[i][1]])
+              );
+              similar.push(cosinesim);
+              if (cosinesim < threshold[poses[idx]][i]){
+                error.push(body[i]);
+                console.log('salah');
+              }
+            }
 
             // Hitung rata-rata
             let total = similar.reduce((partialSum, a) => partialSum + a, 0);
@@ -258,11 +278,17 @@
     </div>
     <div class="column is-8 pr-6 pl-4">
       <figure class="image px-5">
-        <img src={`${poses[i]}.png`} alt="Instructor" />
-        <button class="button is-fullwidth alert is-size-4 px-6 my-4">
-          Perhatikan posisi kaki Anda!
-        </button>
-      </figure>
+        <img src={`${poses[idx]}.png`} alt="Instructor" />
+          {#if (error.length == 0)}
+            <button class="button is-fullwidth success is-size-4 px-6 my-4">
+              Pertahankan posisi Anda!
+            </button>
+          {:else}
+            <button class="button is-fullwidth alert is-size-4 px-6 my-4">
+              Perhatikan posisi {error[0]} Anda!
+            </button>
+          {/if}
+        </figure>
     </div>
   </div>
 </section>
@@ -301,5 +327,15 @@
 
     font-weight: 700;
     color: #f96bbf;
+  }
+
+  .success {
+    background-color: transparent;
+    border-color: #14afc5;
+    border-width: 2px;
+    border-radius: 1rem;
+
+    font-weight: 700;
+    color: #14afc5;
   }
 </style>
