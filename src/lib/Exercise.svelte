@@ -6,20 +6,21 @@
   import similarity from "compute-cosine-similarity";
   import { onMount } from "svelte";
   import { keypoint, threshold } from './stores';
-  import { is_empty } from "svelte/internal";
 
   // var similarity = require( 'compute-cosine-similarity' );
 
   // let timeList = [50, 30, 25, 30, 30, 15, 15, 15, 20];
-  let timeList = [30, 30, 15, 20];
+  let timeList = [10, 25, 10, 30, 10, 30, 10, 30, 10, 15, 10, 15, 10, 15, 10, 20];
   let poses = [
               // "child_pose", 
               // "swimmers", 
-              // "down_dog", 
+              "down_dog", 
               "chair_pose", 
-              "crescent_lunge", 
-              // "plank", 
-              "side_plank", 
+              "crescent_lunge_left", 
+              "crescent_lunge_right", 
+              "plank", 
+              "side_plank_right", 
+              "side_plank_left", 
               // "low_cobra", 
               "namaste"];
 
@@ -57,7 +58,7 @@
     timer = minutes * 60 + seconds;
   }
 
-  $: if (seconds % 5 == 4){
+  $: if (idx % 2 == 1 && seconds % 5 == 0){
     takepicture()
   }
 
@@ -66,7 +67,8 @@
   // }
 
   $: status = "start";
-  $: error = [];
+  $: error = null;
+  $: errorVal = null;
   const width = 300;
   let height = 200;
   let videoSource = null;
@@ -186,7 +188,8 @@
               ['Lengan Bawah Kiri'], ['Bahu-Pinggul Kanan'], ['Bahu-Pinggul kiri'], ['Pinggul'],
               ['Paha Kanan'], ['Betis Kanan'], ['Paha Kiri'], ['Betis Kiri']];
 
-            error = [];
+            error = null;
+            errorVal = null;
             
             // Hitung similaritas tiap anggota tubuh
             // iter.forEach(i => {
@@ -200,12 +203,15 @@
             for(let i=0;i<12;i++){
               let cosinesim = similarity(
                 prediction[iter[i][0]].concat(prediction[iter[i][1]]), 
-                keypoint[poses[idx]][iter[i][0]].concat(keypoint[poses[idx]][iter[i][1]])
+                keypoint[poses[(idx - 1) / 2]][iter[i][0]].concat(keypoint[poses[(idx - 1) / 2]][iter[i][1]])
               );
               similar.push(cosinesim);
-              if (cosinesim < threshold[poses[idx]][i]){
-                error.push(body[i]);
-                console.log('salah');
+              if (cosinesim < threshold[poses[(idx - 1) / 2]][i]){
+                if (errorVal == null || threshold[poses[(idx - 1) / 2]][i] - cosinesim > errorVal){
+                  error = body[i];
+                  errorVal = threshold[poses[(idx - 1) / 2]][i] - cosinesim;
+                }
+                // console.log(body[i]);
               }
             }
 
@@ -270,24 +276,33 @@
           </button>
         {/if}
 
-        <p class="rate is-size-2 my-2">
-          Rate: <br />
-          {rate.toFixed(4)}
-        </p>
+        {#if idx % 2 == 1}
+          <p class="rate is-size-2 my-2">
+            Rate: <br />
+            {rate.toFixed(4)}
+          </p>
+        {/if}
       {/if}
     </div>
     <div class="column is-8 pr-6 pl-4">
       <figure class="image px-5">
-        <img src={`${poses[idx]}.png`} alt="Instructor" />
-          {#if (error.length == 0)}
+        <img src={`${poses[Math.floor(idx/2)]}.png`} alt="Instructor" />
+        {#if idx % 2 == 1}
+          {#if (error == null)}
             <button class="button is-fullwidth success is-size-4 px-6 my-4">
               Pertahankan posisi Anda!
             </button>
           {:else}
             <button class="button is-fullwidth alert is-size-4 px-6 my-4">
-              Perhatikan posisi {error[0]} Anda!
+              Perhatikan posisi {error} Anda!
             </button>
           {/if}
+        {:else}
+          <button class="button is-fullwidth blue is-size-3 px-6 my-4 py-1">
+            <b>PERSIAPAN POSISI</b>
+          </button>
+        {/if}
+        
         </figure>
     </div>
   </div>
@@ -296,6 +311,8 @@
 <style>
   video {
     border-radius: 1rem;
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
   }
 
   .timer {
@@ -337,5 +354,15 @@
 
     font-weight: 700;
     color: #14afc5;
+  }
+
+  .blue {
+    background-color: transparent;
+    height: fit-content;
+    border-color: #4b66f1;
+    border-width: 2px;
+    border-radius: 1rem;
+    color: #4b66f1;
+    letter-spacing: 0.2rem;
   }
 </style>
