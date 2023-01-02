@@ -58,7 +58,7 @@
     timer = minutes * 60 + seconds;
   }
 
-  $: if (idx % 2 == 1 && seconds % 5 == 0){
+  $: if (idx % 2 == 1 && seconds % 7 == 0){
     takepicture()
   }
 
